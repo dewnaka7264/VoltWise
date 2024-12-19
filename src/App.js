@@ -14,6 +14,7 @@ function App() {
   const [totalCost, setTotalCost] = useState(0);
   const [recommendedInverter, setRecommendedInverter] = useState("");
   const [houseLoad, setHouseLoad] = useState(0); // Updated calculation for house load
+  const [batteryCapacity, setBatteryCapacity] = useState(""); // For battery capacity
 
   const applianceDefaults = [
     { name: "Air Conditioner", power: 2.5 },
@@ -55,6 +56,12 @@ function App() {
     }
   };
 
+  const calculateBatteryCapacity = (energy, voltage = 12, days = 1) => {
+    // Battery capacity formula
+    const capacity = (energy * days) / voltage;
+    return (capacity * 1000).toFixed(2); // Convert kWh to Ah and format the value
+  };
+
   const calculateTotals = () => {
     // Calculate house load in kW
     const totalLoad = appliances.reduce(
@@ -69,6 +76,12 @@ function App() {
         0
     );
 
+    const unitsPerDay = appliances.reduce(
+        (total, appliance) =>
+            total + appliance.quantity * appliance.power * appliance.hours ,
+        0
+    );
+
     // Calculate total cost based on monthly units
     let cost = 0;
     if (units <= 68) cost = units * 15;
@@ -78,10 +91,16 @@ function App() {
     // Calculate the recommended inverter capacity in watts
     const recommendedInverterValue = totalLoad * 1.7 * 1000; // Add 70% margin and convert to watts
 
+    // Calculate battery capacity in Ah
+    const energy = unitsPerDay;
+    console.log(unitsPerDay);
+    const calculatedBatteryCapacity = calculateBatteryCapacity(unitsPerDay);
+
     setHouseLoad(totalLoad.toFixed(2)); // Set house load (kW)
     setTotalUnits(units.toFixed(2)); // Set total units (kWh)
     setTotalCost(cost.toFixed(2)); // Set total cost (LKR)
     setRecommendedInverter(`${recommendedInverterValue.toFixed(0)} W`);
+    setBatteryCapacity(`${calculatedBatteryCapacity} Ah`);
   };
 
   return (
@@ -118,7 +137,10 @@ function App() {
               min="1"
               value={newAppliance.quantity}
               onChange={(e) =>
-                  setNewAppliance({ ...newAppliance, quantity: parseInt(e.target.value) })
+                  setNewAppliance({
+                    ...newAppliance,
+                    quantity: parseInt(e.target.value),
+                  })
               }
           />
           <input
@@ -128,7 +150,10 @@ function App() {
               min="0.01"
               value={newAppliance.power}
               onChange={(e) =>
-                  setNewAppliance({ ...newAppliance, power: parseFloat(e.target.value) })
+                  setNewAppliance({
+                    ...newAppliance,
+                    power: parseFloat(e.target.value),
+                  })
               }
           />
           <input
@@ -138,7 +163,10 @@ function App() {
               min="0.01"
               value={newAppliance.hours}
               onChange={(e) =>
-                  setNewAppliance({ ...newAppliance, hours: parseFloat(e.target.value) })
+                  setNewAppliance({
+                    ...newAppliance,
+                    hours: parseFloat(e.target.value),
+                  })
               }
           />
           <button onClick={addAppliance}>Add Appliance</button>
@@ -166,7 +194,10 @@ function App() {
                   <td>{appliance.hours}</td>
                   <td>
                     {(
-                        appliance.quantity * appliance.power * appliance.hours * 30
+                        appliance.quantity *
+                        appliance.power *
+                        appliance.hours *
+                        30
                     ).toFixed(2)}
                   </td>
                 </tr>
@@ -191,6 +222,9 @@ function App() {
             </strong>
           </p>
           <p>House Load: {houseLoad} kW</p>
+          <p>
+            Battery Capacity Required: <strong>{batteryCapacity}</strong>
+          </p>
         </div>
       </div>
   );
